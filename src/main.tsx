@@ -1,12 +1,14 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import Sessions from "./pages/Sessions"
+
+import Login from "./pages/Login"
 import SessionDetail from "./pages/SessionDetail"
+
 import "./styles.css"
 
 const router = createBrowserRouter([
-  { path: "/", element: <Sessions /> },
+  { path: "/", element: <Login /> },
   { path: "/session/:id", element: <SessionDetail /> },
 ])
 

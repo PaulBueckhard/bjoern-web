@@ -10,7 +10,6 @@ export interface LogItem {
 const API_BASE = import.meta.env.VITE_API_BASE || ""
 const API_TOKEN = import.meta.env.VITE_API_TOKEN || ""
 
-/** Basic GET helper with bearer token */
 async function getJSON<T>(path: string): Promise<T> {
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
@@ -20,19 +19,39 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function fetchSession(id: SessionId, offset = 0, limit = 200): Promise<LogItem[]> {
-  if (!API_BASE) return mockFetchSession(id)
-  const q = new URLSearchParams({ offset: String(offset), limit: String(limit) })
-  return getJSON<LogItem[]>(`/api/sessions/${encodeURIComponent(id)}?${q.toString()}`)
+const STORAGE_KEY = "bjorn-login"
+
+export interface StoredLogin {
+  sessionCode: string
+  parentPassword: string
+  childName: string
 }
 
-function mockFetchSession(id: SessionId): LogItem[] {
-  const now = Date.now() / 1000
-  return [
-    { role: "user", content: "What's the biggest planet?", ts: now - 60, lang: "en" },
-    { role: "assistant", content: "Jupiter is the biggest. What do you think makes it so large?", ts: now - 58, lang: "en" },
-    { role: "user", content: "Is it gas?", ts: now - 50, lang: "en" },
-    { role: "assistant", content: "Yes, mostly hydrogen and helium. Want a quick planet quiz?", ts: now - 48, lang: "en" },
-  ]
+export function loadStoredLogin(): StoredLogin | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 }
 
+export function saveStoredLogin(data: StoredLogin | null) {
+  if (!data) {
+    localStorage.removeItem(STORAGE_KEY)
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  }
+}
+
+/* ---------- Backend API ---------- */
+
+export async function fetchSessionByShortId(
+  shortId: string,
+  parentPassword: string
+): Promise<LogItem[]> {
+  if (!API_BASE) throw new Error("API_BASE not set")
+  const params = new URLSearchParams({ pin: parentPassword })
+  return getJSON<LogItem[]>(`/api/session/${encodeURIComponent(shortId)}?${params}`)
+}
