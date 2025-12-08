@@ -7,17 +7,50 @@ export interface LogItem {
   lang?: string
 }
 
+export interface SessionSuccess {
+  child_name: string
+  messages: LogItem[]
+}
+
+export interface SessionError {
+  error: string
+}
+
+export type SessionResponse = SessionSuccess | SessionError
+
 const API_BASE = import.meta.env.VITE_API_BASE || ""
 const API_TOKEN = import.meta.env.VITE_API_TOKEN || ""
 
-async function getJSON<T>(path: string): Promise<T> {
+/** Basic JSON helper that always returns some JSON (never throws on HTTP status) */
+async function getJSON(path: string): Promise<any> {
+  if (!API_BASE) {
+    return { error: "API_BASE not set in .env" }
+  }
+
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
     headers: API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {},
   })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-  return res.json() as Promise<T>
+
+  const text = await res.text()
+  let json: any = {}
+  try {
+    json = text ? JSON.parse(text) : {}
+  } catch {
+    json = {}
+  }
+
+  if (!res.ok) {
+    if (json && typeof json === "object" && "error" in json) {
+      return { error: String(json.error) }
+    }
+    return { error: `${res.status} ${res.statusText}` }
+  }
+
+  return json
 }
+
+/* ---------- Stored login data (for "Remember login") ---------- */
 
 const STORAGE_KEY = "bjorn-login"
 
@@ -31,7 +64,7 @@ export function loadStoredLogin(): StoredLogin | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw)
+    return JSON.parse(raw) as StoredLogin
   } catch {
     return null
   }
@@ -50,8 +83,7 @@ export function saveStoredLogin(data: StoredLogin | null) {
 export async function fetchSessionByShortId(
   shortId: string,
   parentPassword: string
-): Promise<LogItem[]> {
-  if (!API_BASE) throw new Error("API_BASE not set")
+): Promise<SessionResponse> {
   const params = new URLSearchParams({ pin: parentPassword })
-  return getJSON<LogItem[]>(`/api/session/${encodeURIComponent(shortId)}?${params}`)
+  return getJSON(`/api/session/${encodeURIComponent(shortId)}?${params.toString()}`)
 }

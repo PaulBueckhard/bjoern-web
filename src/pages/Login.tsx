@@ -1,100 +1,132 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   loadStoredLogin,
   saveStoredLogin,
-  fetchSessionByShortId,
+  type StoredLogin,
 } from "../api"
 
 export default function Login() {
   const navigate = useNavigate()
 
-  const stored = loadStoredLogin()
-  const [sessionCode, setSessionCode] = useState(stored?.sessionCode || "")
-  const [parentPassword, setParentPassword] = useState(stored?.parentPassword || "")
-  const [childName, setChildName] = useState(stored?.childName || "")
-  const [remember, setRemember] = useState(Boolean(stored))
+  const [sessionCode, setSessionCode] = useState("")
+  const [parentPassword, setParentPassword] = useState("")
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  async function handleLogin() {
-    setError(null)
+  // Load saved login (for "Remember login")
+  useEffect(() => {
+    const saved = loadStoredLogin()
+    if (saved) {
+      setSessionCode(saved.sessionCode)
+      setParentPassword(saved.parentPassword)
+      setRemember(true)
+    }
+  }, [])
 
-    const code = sessionCode.trim().toUpperCase()
-    const pw = parentPassword.trim()
-    const name = childName.trim()
+  // Sanitize inputs
+  const cleanSessionCode = (val: string) =>
+    val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6)
 
-    if (!code) {
-      setError("Please enter the session code.")
+  const cleanPassword = (val: string) =>
+    val.replace(/\D/g, "").slice(0, 4)
+
+  const isSessionCodeValid = sessionCode.length === 6
+  const isPasswordValid = parentPassword.length === 4
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!isSessionCodeValid) {
+      setError("Session code must be 6 characters (A–Z, 0–9).")
       return
     }
-    if (!/^\d{4}$/.test(pw)) {
-      setError("Parent password must be 4 digits.")
-      return
-    }
-    if (!name) {
-      setError("Please enter the child's name.")
+    if (!isPasswordValid) {
+      setError("Parent password must be exactly 4 digits.")
       return
     }
 
-    setLoading(true)
-    try {
-      await fetchSessionByShortId(code, pw)
-
-      if (remember) {
-        saveStoredLogin({ sessionCode: code, parentPassword: pw, childName: name })
-      } else {
-        saveStoredLogin(null)
-      }
-
-      navigate(`/session/${encodeURIComponent(code)}`)
-    } catch (e: any) {
-      setError(String(e))
-    } finally {
-      setLoading(false)
+    const login: StoredLogin = {
+      sessionCode,
+      parentPassword,
+      childName: "(unknown yet)", // will be filled after first successful fetch
     }
+
+    if (remember) {
+      saveStoredLogin(login)
+    } else {
+      saveStoredLogin(null)
+    }
+
+    navigate(`/session/${sessionCode}`)
   }
 
   return (
     <div className="app">
-      <h1>Session Access</h1>
+      <h1>Parent Login</h1>
 
-      <div className="card" style={{ display: "grid", gap: 12 }}>
-        <input
-          value={sessionCode}
-          onChange={e => setSessionCode(e.target.value.toUpperCase())}
-          placeholder="Session Code (e.g. UFVFU2)"
-        />
+      <form className="card" onSubmit={onSubmit}>
+        <div style={{ marginBottom: 12 }}>
+          <label>Session Code</label>
+          <input
+            value={sessionCode}
+            maxLength={6}
+            onChange={(e) => {
+              setSessionCode(cleanSessionCode(e.target.value))
+              if (error) setError(null)
+            }}
+            placeholder="ABC123"
+            style={{
+              borderColor: !isSessionCodeValid && sessionCode ? "red" : "var(--border)",
+              width: "100%",
+              marginTop: 4,
+            }}
+          />
+        </div>
 
-        <input
-          value={parentPassword}
-          onChange={e => setParentPassword(e.target.value)}
-          placeholder="Parent Password (4 digits)"
-          type="password"
-          maxLength={4}
-        />
+        <div style={{ marginBottom: 12 }}>
+          <label>Parent Password</label>
+          <input
+            value={parentPassword}
+            maxLength={4}
+            inputMode="numeric"
+            onChange={(e) => {
+              setParentPassword(cleanPassword(e.target.value))
+              if (error) setError(null)
+            }}
+            placeholder="4 digits"
+            style={{
+              borderColor: !isPasswordValid && parentPassword ? "red" : "var(--border)",
+              width: "100%",
+              marginTop: 4,
+            }}
+          />
+        </div>
 
-        <input
-          value={childName}
-          onChange={e => setChildName(e.target.value)}
-          placeholder="Child's Name"
-        />
-
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <input
             type="checkbox"
             checked={remember}
-            onChange={e => setRemember(e.target.checked)}
+            onChange={(e) => setRemember(e.target.checked)}
           />
-          Remember me
+          Remember login
         </label>
 
-        {error && <div className="card">Error: {error}</div>}
+        {error && (
+          <div style={{ color: "tomato", marginBottom: 12 }}>
+            {error}
+          </div>
+        )}
 
-        <button className="primary" onClick={handleLogin} disabled={loading}>
-          {loading ? "Checking…" : "Open Session"}
+        <button
+          type="submit"
+          className="primary"
+          disabled={!isSessionCodeValid || !isPasswordValid}
+          style={{ opacity: isSessionCodeValid && isPasswordValid ? 1 : 0.5 }}
+        >
+          Continue
         </button>
-      </div>
+      </form>
     </div>
   )
 }
