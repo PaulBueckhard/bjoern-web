@@ -7,10 +7,12 @@ import {
   type LogItem,
   type SessionResponse,
 } from "../api"
+import { useToast } from "../components/Toast"
 
 export default function SessionDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
 
   const login = loadStoredLogin()
 
@@ -22,7 +24,7 @@ export default function SessionDetail() {
 
   // ---------- SECURITY CHECK ----------
   useEffect(() => {
-    // No saved login at all → back to login
+    // No saved login → back to login
     if (!login) {
       navigate("/")
       return
@@ -58,9 +60,11 @@ export default function SessionDetail() {
       parentPassword
     )
 
-    // Error from backend
+    // -------- Error from backend --------
     if (!("messages" in data)) {
-      setErr(data.error || "Unknown error")
+      const msg = data.error || "Unknown error"
+      toast.show(msg)
+      setErr(msg)
       setItems([])
       return
     }
@@ -85,7 +89,6 @@ export default function SessionDetail() {
       const oldTs = prev && prev.length ? prev[prev.length - 1].ts : 0
       const newTs = messages.length ? messages[messages.length - 1].ts : 0
       lastTimestamp.current = oldTs
-      // we use newTs later in auto-scroll effect
       return messages
     })
   }
@@ -99,7 +102,7 @@ export default function SessionDetail() {
     }
   }, [id, parentPassword])
 
-  // Track whether user is at the bottom
+  // Track scroll location
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -116,6 +119,7 @@ export default function SessionDetail() {
     return () => el.removeEventListener("scroll", onScroll)
   }, [])
 
+  // Auto-scroll on new messages
   useEffect(() => {
     const el = scrollRef.current
     if (!el || !items) return

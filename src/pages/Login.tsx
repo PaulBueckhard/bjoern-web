@@ -4,10 +4,13 @@ import {
   loadStoredLogin,
   saveStoredLogin,
   type StoredLogin,
+  fetchSessionByShortId,
 } from "../api"
+import { useToast } from "../components/Toast"
 
 export default function Login() {
   const navigate = useNavigate()
+  const toast = useToast()
 
   const [sessionCode, setSessionCode] = useState("")
   const [parentPassword, setParentPassword] = useState("")
@@ -38,32 +41,45 @@ export default function Login() {
     e.preventDefault()
 
     if (!isSessionCodeValid) {
-      setError("Session code must be 6 characters (A–Z, 0–9).")
+      toast.show("Session code must be 6 characters.")
       return
     }
     if (!isPasswordValid) {
-      setError("Parent password must be exactly 4 digits.")
+      toast.show("Parent password must be 4 digits.")
       return
     }
 
+    // ---------- VALIDATE WITH BACKEND ----------
+    const resp = await fetchSessionByShortId(sessionCode, parentPassword)
+
+    if ("error" in resp) {
+      const msg =
+        resp.error === "invalid session id"
+          ? "This session code does not exist."
+          : resp.error === "invalid pin"
+          ? "Incorrect parent password."
+          : "Session ID or parent password is incorrect."
+
+      toast.show(msg)
+      return // ← stay on page
+    }
+
+    // ---------- SUCCESS ----------
     const login: StoredLogin = {
       sessionCode,
       parentPassword,
-      childName: "(unknown yet)", // will be filled after first successful fetch
+      childName: resp.child_name || "(unknown)",
     }
 
-    if (remember) {
-      saveStoredLogin(login)
-    } else {
-      saveStoredLogin(null)
-    }
+    if (remember) saveStoredLogin(login)
+    else saveStoredLogin(null)
 
     navigate(`/session/${sessionCode}`)
   }
 
   return (
     <div className="app">
-      <h1>Parent Login</h1>
+      <h1>Björn the AI toy</h1>
 
       <form className="card" onSubmit={onSubmit}>
         <div style={{ marginBottom: 12 }}>
@@ -75,7 +91,7 @@ export default function Login() {
               setSessionCode(cleanSessionCode(e.target.value))
               if (error) setError(null)
             }}
-            placeholder="ABC123"
+            placeholder="Enter session code (e.g.: ABC123)"
             style={{
               borderColor: !isSessionCodeValid && sessionCode ? "red" : "var(--border)",
               width: "100%",
@@ -94,7 +110,7 @@ export default function Login() {
               setParentPassword(cleanPassword(e.target.value))
               if (error) setError(null)
             }}
-            placeholder="4 digits"
+            placeholder="Enter password (e.g.: 1234)"
             style={{
               borderColor: !isPasswordValid && parentPassword ? "red" : "var(--border)",
               width: "100%",
@@ -103,20 +119,16 @@ export default function Login() {
           />
         </div>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <label
+          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}
+        >
           <input
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
           />
-          Remember login
+          Remember me
         </label>
-
-        {error && (
-          <div style={{ color: "tomato", marginBottom: 12 }}>
-            {error}
-          </div>
-        )}
 
         <button
           type="submit"
@@ -124,7 +136,7 @@ export default function Login() {
           disabled={!isSessionCodeValid || !isPasswordValid}
           style={{ opacity: isSessionCodeValid && isPasswordValid ? 1 : 0.5 }}
         >
-          Continue
+          Login
         </button>
       </form>
     </div>
