@@ -192,4 +192,4 @@ This frontend provides exactly that:
 ![Björn Login Page](screenshots/bjoern_login_page.png)
 
 ### Message Viewer
-![Björn Message Page](screenshots/bkoern_message_page.png)
+![Björn Message Page](screenshots/bjoern_message_page.png)
