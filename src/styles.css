@@ -1,4 +1,5 @@
 :root {
+  /* Global color scheme and design tokens */
   color-scheme: light dark;
   --bg: #0b0c10;
   --card: #14161b;
@@ -8,14 +9,18 @@
   --border: #2a2f36;
 }
 
+/* Basic reset / layout normalization */
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter,
+    Arial, sans-serif;
 }
 
 body {
@@ -23,17 +28,19 @@ body {
   color: var(--text);
 }
 
+/* Main app container */
 .app {
   max-width: 960px;
   margin: 0 auto;
   padding: 20px;
 }
 
-h1, h2 {
+h1,
+h2 {
   margin: 0 0 12px;
 }
 
-/* Card container used for loading/errors */
+/* Generic card container (used for forms, loading, errors, etc.) */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -41,12 +48,14 @@ h1, h2 {
   padding: 14px 16px;
 }
 
-/* Session list */
+/* ---------- SESSION LIST ---------- */
+
 .list {
   display: grid;
   gap: 10px;
 }
 
+/* Row in session list or other list-style UIs */
 .row {
   display: flex;
   justify-content: space-between;
@@ -59,14 +68,18 @@ h1, h2 {
   text-decoration: none;
   color: inherit;
 }
+
 .row:hover {
   border-color: var(--accent);
 }
 
+/* Small, muted helper text / labels */
 .badge {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ---------- TOOLBAR / HEADER ---------- */
 
 /* Top toolbar (back button + title) */
 .toolbar {
@@ -83,8 +96,12 @@ h1, h2 {
   padding: 0;
 }
 
-/* Inputs + buttons */
-input, select, button {
+/* ---------- FORM ELEMENTS ---------- */
+
+/* Base styles for interactive elements */
+input,
+select,
+button {
   background: #0f1115;
   color: var(--text);
   border: 1px solid var(--border);
@@ -96,7 +113,7 @@ button {
   cursor: pointer;
 }
 
-/* Primary button styling */
+/* Primary action button */
 button.primary {
   background: var(--accent);
   color: #ffffff;
@@ -105,9 +122,12 @@ button.primary {
   padding: 8px 18px;
   font-weight: 600;
 }
+
 button.primary:hover {
   filter: brightness(1.05);
 }
+
+/* ---------- BACK BUTTON ---------- */
 
 /* Back button (pill style) */
 .back-btn {
@@ -121,7 +141,10 @@ button.primary:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
   white-space: nowrap;
 }
 
@@ -131,12 +154,12 @@ button.primary:hover {
   transform: translateX(-1px);
 }
 
-/* Label inside back button */
+/* Label inside back button ("Back") */
 .back-btn .label {
   display: inline;
 }
 
-/* Collapse back button on narrow screens */
+/* Collapse back button label on narrow screens */
 @media (max-width: 520px) {
   .back-btn .label {
     display: none;
@@ -147,6 +170,8 @@ button.primary:hover {
     gap: 0;
   }
 }
+
+/* ---------- MESSAGE LOG / CHAT ---------- */
 
 /* Message log container */
 .log {
@@ -166,7 +191,7 @@ button.primary:hover {
   }
 }
 
-/* Message bubble base style */
+/* Base style for a message bubble */
 .msg {
   padding: 10px 12px;
   border-radius: 16px;
@@ -175,21 +200,21 @@ button.primary:hover {
   max-width: 75%;
 }
 
-/* Child message (right side) */
+/* Child message (user) – right aligned */
 .msg.user {
   background: #923B0F;
   color: var(--text);
   justify-self: end;
 }
 
-/* Björn message (left side) */
+/* Björn message (assistant) – left aligned */
 .msg.assistant {
   background: #212121;
   color: var(--text);
   justify-self: start;
 }
 
-/* Metadata (name + timestamp) */
+/* Metadata line (name + timestamp) */
 .msg .meta {
   font-size: 12px;
   color: var(--muted);
